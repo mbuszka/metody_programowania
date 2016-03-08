@@ -2,6 +2,21 @@
 #include <stdio.h>
 #include <math.h>
 
+    // kompilować z flagą -lm           
+    // układ współrzędnych sześcianu:
+    /*  ^ y
+        |
+        |
+        |
+        +-------> x
+       /
+      /
+   z /
+    \/ 
+    
+    */s
+    
+    
 typedef double Point[3];
 typedef Point Vec;
 typedef double Mat[3][3];
