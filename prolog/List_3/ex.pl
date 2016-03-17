@@ -32,6 +32,7 @@ concat_number(L, N) :- concat_number(L, 0, N).
 concat_number([], A, A).
 concat_number([H|T], A, N) :- A1 is A * 10 + H, concat_number(T, A1, N), !.
 
+decimal(0,[0]) :- !.
 decimal(N, R) :- decimal(N, [], R).
 decimal(0, A, A).
 decimal(N, A, R) :- D is N mod 10, N1 is N div 10, decimal(N1, [D|A], R), !.
@@ -39,8 +40,8 @@ decimal(N, A, R) :- D is N mod 10, N1 is N div 10, decimal(N1, [D|A], R), !.
 % exercise 4
 
 select_min([E], E, []).
-select_min([H|T], H, T) :- select_min(T, M, _), H =< M, !.
-select_min([H|T], M, [H|R]) :- select_min(T, M, R), H > M.
+select_min([H|T], M, [H|R]) :- select_min(T, M, R), H > M, !.
+select_min([H|T], H, T).
 
 select_sort([],[]).
 select_sort(L, [H|T]) :- select_min(L, H, R), select_sort(R, T), !.
@@ -59,6 +60,11 @@ insert_sort([H|T], R) :- insert_sort(T, S), insert(S, H, R), !.
 reverse2(X, Y) :- reverse2(X, [], Y).
 reverse2([], A, A).
 reverse2([H|T], A, Y) :- reverse2(T, [H|A], Y), !.
+
+reverse3(X, Y) : reverse(X, [], Y, Y).
+reverse3([], A, A, []).
+reverse3([H|T], A, Y, [_|S]) :-
+    reverse3(T, [H|A], Y, L).
 
 % exercise 7
 
