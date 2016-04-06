@@ -51,18 +51,36 @@ resolve(cl(_, N1, P1), cl(_, N2, P2), cl(C3, N3, P3)) :-
     length(N3, L1), length(P3, L2),
     C3 is L1 + L2.
 
+isSubset(cl(_, N1, P1), cl(_, N2, P2)) :-
+    ord_subset(N1, N2),
+    ord_subset(P1, P2).
+
+filterNot(_, _, [], []).
+filterNot(Pred, Val, [H-V|T], [H-V|Filtered]) :-
+    not(call(Pred, Val, H)),
+    filterNot(Pred, Val, T, Filtered).
+filterNot(Pred, Val, [_|T], Filtered) :-
+    filterNot(Pred, Val, T, Filtered).
+
+prune(C, Clauses, NewClauses) :-
+    assoc_to_list(Clauses, List),
+    filterNot(isSubset, C, List, Res),
+    list_to_assoc(Res, NewClauses).
+
 reason(Clauses, NewClauses, Counter, Res) :-
     gen_assoc(C, Clauses, Nr1),
     gen_assoc(D, Clauses, Nr2),
     C \== D,
     resolve(C, D, R),
     not(get_assoc(R, Clauses, _)),
+    prune(R, Clauses, Pruned),
     formatClause(R, Nr1, Nr2, Res),
-    put_assoc(R, Clauses, Counter, NewClauses).
+    put_assoc(R, Pruned, Counter, NewClauses).
 
 prove_(Clauses, _, []) :-
     get_assoc(cl(0, [], []), Clauses, _).
 prove_(Clauses, Counter, [Res|Proof]) :-
+    !,
     reason(Clauses, NewClauses, Counter, Res),
     !,
     NCounter is Counter + 1,
@@ -70,10 +88,10 @@ prove_(Clauses, Counter, [Res|Proof]) :-
 
 
 prove(Strings, FullProof) :-
-    length(Strings, Len),
-    numlist(1, Len, Idxs),
     maplist(convertClause, Strings, C),
     sort(C, Cls),
+    length(Cls, Len),
+    numlist(1, Len, Idxs),
     zipWith(fillNr, Cls, Idxs, Pairs),
     maplist(formatAxiom, Cls, Axioms),
     Counter is Len + 1,
