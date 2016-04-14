@@ -1,42 +1,49 @@
 % parser
 
+:- use_module(library(lists)).
+
+parse(Text, AST) :-
+  atom_codes(Text, Codes),
+  phrase(lexer(Tokens), Codes),
+  phrase(program(AST), Tokens).
+
 program(AST) -->
   [tProgram, tIdent(_)], block(AST).
 
 block(Block) -->
   declarations(Decl), [tBegin], instructions(Instr), [tEnd],
-  { Block = b(Decl, Instr) }.
+  { flatten(Decl, Flat),
+    Block = b(Flat, Instr) }.
 
 declarations(Declarations) -->
-  declaration(First),
-  ( declarations(Rest), !,
+  ( declaration(First), !, declarations(Rest),
     { Declarations = [First| Rest] }
   ; [],
-    { Declarations = [First] }
+    { Declarations = [] }
   ).
 
 declaration(Decl) -->
   ( declarator(D), !, { Decl = D }
-  ; procedure(P),  !, { Decl = P }
+  ; procedure(P),  !, { Decl = [P] }
   ).
 
 declarator(D) -->
   [tLocal], variables(V), { D = V }.
 
 variables(Vars) -->
-  variable(First),
+  variableIdent(variable(Id, Addr)),
   ( [tComma], !, variables(Rest),
-    { Vars = [First| Rest] }
+    { Vars = [local(Id, Addr, _Cnt)| Rest] }
   ; [],
-    { Vars = [First]}
+    { Vars = [local(Id, Addr, _Cnt)] }
   ).
 
-variable(V) -->
-  [tIdent(Id)], { V = var(Id) }.
+variableIdent(V) -->
+  [tIdent(Id)], { V = variable(Id, _Addr) }.
 
 procedure(P) -->
   [tProcedure, tIdent(Id), tLPar], formalParameters(Args), [tRPar], block(B),
-  { P = proc(Id, Args, B) }.
+  { P = proc(Id, _Addr, Args, B) }.
 
 formalParameters(Args) -->
   ( formalParametersSeq(Args), !
@@ -53,10 +60,10 @@ formalParametersSeq(Args) -->
   ).
 
 formalParameter(A) -->
-  ( variable(V), !,
-    { A = byName(V) }
-  ; [tValue], variable(V),
-    { A = byValue(V) }
+  ( variableIdent(variable(Id, Addr)), !,
+    { A = name(Id, Addr, _Cnt) }
+  ; [tValue], variableIdent(variable(Id, Addr)),
+    { A = value(Id, Addr, _Cnt) }
   ).
 
 instructions(IS) -->
@@ -80,11 +87,11 @@ instruction(I) -->
     { I = discardReturn(Call) }
   ; [tReturn], !, arithExpression(Exp),
     { I = return(Exp) }
-  ; [tRead], !, variable(V),
+  ; [tRead], !, variableIdent(V),
     { I = ioRead(V) }
   ; [tWrite], !, arithExpression(Exp),
     { I = ioWrite(Exp) }
-  ; variable(V), [tAssgn], arithExpression(Exp),
+  ; variableIdent(V), [tAssgn], arithExpression(Exp),
     { I = assgn(V, Exp) }
   ).
 
@@ -114,17 +121,17 @@ factor(F) -->
 primary(P) -->
   ( [tLPar], !, arithExpression(Exp), [tRPar],
     { P = Exp }
-  ; variable(V), !,
-    { P = V }
   ; procedureCall(Call), !,
-    { P = Call}
+    { P = Call }
+  ; variableIdent(V), !,
+    { P = V }
   ; [tNum(N)],
     { P = const(N) }
   ).
 
 procedureCall(Call) -->
   [tIdent(Id), tLPar], actualParameters(Params), [tRPar],
-  { Call = call(Id, Params) }.
+  { Call = procCall(Id, _Addr, Params) }.
 
 actualParameters(Params) -->
   ( actualParametersSeq(Params), !
@@ -134,11 +141,53 @@ actualParameters(Params) -->
 
 actualParametersSeq(Params) -->
   arithExpression(First),
-  ( actualParametersSeq(Rest), !,
+  ( [tComma], !, actualParametersSeq(Rest),
     { Params = [First| Rest] }
   ; [],
     { Params = [First] }
   ).
+
+boolExpression(Bool) -->
+  conjunction(First),
+  ( [tOr], !, boolExpression(Rest),
+    { Bool = or(First, Rest) }
+  ; [],
+    { Bool = First }
+  ).
+
+conjunction(Con) -->
+  condition(First),
+  ( [tAnd], conjunction(Rest),
+    { Con = and(First, Rest) }
+  ; [],
+    { Con = First }
+  ).
+
+condition(Con) -->
+  ( [tNot], !, relationalExpression(Exp),
+    { Con = not(Exp) }
+  ; relationalExpression(Exp),
+    { Con = Exp }
+  ).
+
+relationalExpression(Expr) -->
+  ( [tLPar], !, boolExpression(Expr), [tRPar]
+  ; arithExpression(Left), relationalOperator(Op), arithExpression(Right),
+    { Expr =.. [Op, Left, Right] }
+  ).
+
+relationalOperator(lt) -->
+  [tLt],  !.
+relationalOperator(lq) -->
+  [tLeq], !.
+relationalOperator(gt) -->
+  [tGt],  !.
+relationalOperator(gq) -->
+  [tGeq], !.
+relationalOperator(eq) -->
+  [tEq],  !.
+relationalOperator(nq) -->
+  [tNeq], !.
 
 multiplicativeOp(mul) -->
   [tTimes], !.
