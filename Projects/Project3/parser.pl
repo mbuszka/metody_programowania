@@ -8,7 +8,8 @@ parse(Text, AST) :-
   phrase(program(AST), Tokens).
 
 program(AST) -->
-  [tProgram, tIdent(_)], block(AST).
+  [tProgram, tIdent(Id)], block(B),
+  { AST = proc(Id, _Addr, [], B) }.
 
 block(Block) -->
   declarations(Decl), [tBegin], instructions(Instr), [tEnd],
@@ -33,9 +34,9 @@ declarator(D) -->
 variables(Vars) -->
   variableIdent(variable(Id, Addr)),
   ( [tComma], !, variables(Rest),
-    { Vars = [local(Id, Addr, _Cnt)| Rest] }
+    { Vars = [local(Id, Addr)| Rest] }
   ; [],
-    { Vars = [local(Id, Addr, _Cnt)] }
+    { Vars = [local(Id, Addr)] }
   ).
 
 variableIdent(V) -->
@@ -61,9 +62,9 @@ formalParametersSeq(Args) -->
 
 formalParameter(A) -->
   ( variableIdent(variable(Id, Addr)), !,
-    { A = name(Id, Addr, _Cnt) }
+    { A = name(Id, Addr) }
   ; [tValue], variableIdent(variable(Id, Addr)),
-    { A = value(Id, Addr, _Cnt) }
+    { A = value(Id, Addr) }
   ).
 
 instructions(IS) -->

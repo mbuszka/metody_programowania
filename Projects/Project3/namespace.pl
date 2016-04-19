@@ -1,40 +1,50 @@
 % resolve indentifiers namespace
 
+validateProgram(proc(_, Addr, Args, B), proc(Addr, Args, Bv)) :-
+  validateBlock(B, [], Bv).
+
 validateBlock(b(Ds, Ins), Names, b(Dsv, Insv)) :-
   validateDeclarations(Ds, Names, NewNames, Dsv),
   validateInstructions(Ins, NewNames, Insv).
 
 validateDeclarations(Ds, Names, NewNames, Dsv) :-
-  validateDeclarations(Ds, 0, Names, NewNames, Dsv).
+  validateDeclarations(Ds, -1, Names, NewNames, Dsv).
+
+ % TODO check for duplicate names
+
+% duplicateInScope(L, [H|T]) :-
 
 validateDeclarations([], _, Names, Names, []).
-validateDeclarations([H|T], Clocal, Names, Ret, Dsv) :-
-  ( H = local(_Id, _Addr, Clocal), !,
-      Cnt is Clocal + 1,
+validateDeclarations([H|T], Cnt, Names, Ret, Dsv) :-
+  ( H = local(Id, Cnt), !,
+      Cntr is Cnt - 1,
+      % not(duplicateInScope(H, Names)).
       NewNames = [H| Names],
-      Dsv = [H| Tv]
+      Dsv = [local(Cnt)| Tv]
   ; H = proc(Id, Addr, Args, Block), !,
-      Cnt is Clocal,
-      validateFormalParameters(Args), % validate so that they have different names
+      Cntr is Cnt,
+      validateFormalParameters(Args, Argsv),
       length(Args, ArgsC),
-      append(Args, [rec(Id, Addr, ArgsC)| Names], BlockNames), % maybe should reverse them ?
+      append(Args, [par(Id, Addr, ArgsC, Args)| Names], BlockNames),
       validateBlock(Block, BlockNames, Blockv),
-      NewNames = [proc(Id, Addr, ArgsC)| Names],
-      Dsv = [proc(Id, Addr, Args, Blockv)| Tv]
-  ), validateDeclarations(T, Cnt, NewNames, Ret, Tv).
+      NewNames = [proc(Id, Addr, ArgsC, Args)| Names],
+      Dsv = [proc(Addr, Argsv, Blockv)| Tv]
+  ), validateDeclarations(T, Cntr, NewNames, Ret, Tv).
 
-validateFormalParameters(Args) :-
-  validateFormalParameters(Args, 0, 0).
+ % TODO check for duplicate names
 
-validateFormalParameters([], _, _).
-validateFormalParameters([H| T], Cname, Cvalue) :-
-  ( H = value(_Id, _Addr, Cvalue), !,
-      CntV is Cvalue + 1,
-      CntN = Cname
-  ; H = name(_Id, _Addr, Cname),
-      CntN is Cname + 1,
-      CntV = Cvalue
-  ), validateFormalParameters(T, CntN, CntV).
+validateFormalParameters(Args, Argsv) :-
+  validateFormalParameters(Args, 3, Argsv).
+
+validateFormalParameters([], _, []).
+validateFormalParameters([H| T], Cnt, [Hv|Tv]) :-
+  ( H = value(_Id, Cnt), !,
+      Cntr is Cnt + 1,
+      Hv = value(Cnt)
+  ; H = name(_Id, Cnt),
+      Cntr is Cnt + 2,
+      Hv = name(Cnt)
+  ), validateFormalParameters(T, Cntr, Tv).
 
 validateInstructions([], _, []).
 validateInstructions([H|T], Names, [Hv|Tv]) :-
@@ -107,33 +117,44 @@ validateBool(Bool, Names, Boolv) :-
       Boolv =.. [Op, Leftv, Rightv]
   ).
 
-validateProc(procCall(Id, Addr, Params), Names, procCall(Id, Addr, Paramsv)) :-
+validateProc(procCall(Id, Addr, Params), Names, procCall(NewAddr, Paramsv)) :-
   length(Params, ParamsC),
-  validateProcId(Id, Addr, ParamsC, Names), !,
-  validateActualParams(Params, Names, Paramsv).
+  validateProcId(Id, Addr, FormalParams, ParamsC, Names, NewAddr), !,
+  validateActualParams(Params, FormalParams, Names, Paramsv).
 
-validateProcId(Id, Addr, ParamsC, [N| _]) :-
-  ( N = proc(Id, Addr, ParamsC), !
-  ; N = rec(Id, Addr, ParamsC)
+validateProcId(Id, Addr, FormalParams, ParamsC, [N| _], NewAddr) :-
+  ( N = proc(Id, Addr, ParamsC, FormalParams), !, NewAddr = Addr
+  ; N = par(Id, Addr, ParamsC, FormalParams), NewAddr = env(Addr)
   ), !.
-validateProcId(Id, Addr, ParamsC, [_| Names]) :-
-  validateProcId(Id, Addr, ParamsC, Names).
+validateProcId(Id, Addr, FormalParams, ParamsC, [N| Names], NewAddr) :-
+  ( N = par(_, _, _, _), !, NewAddr = env(RetAddr)
+  ; RetAddr = NewAddr
+  ),
+  validateProcId(Id, Addr, FormalParams, ParamsC, Names, RetAddr).
 
-validateActualParams([], _, []).
-validateActualParams([H| T], Names, [Hv| Tv]) :-
-  validateExpr(H, Names, Hv),
-  validateActualParams(T, Names, Tv).
+validateActualParams([], _, _, []).
+validateActualParams([H| T], [P|Params], Names, [Hv| Tv]) :-
+  validateExpr(H, Names, Expv),
+  P =.. [Type| _],
+  Hv =.. [Type, Expv],
+  validateActualParams(T, Params, Names, Tv).
 
-validateVar(V, Names, Vv) :-
-  validateVar(V, Names, _, Vv).
-validateVar(variable(Id, Addr), [N| _Names], Scope, variable(Id, Addr)) :-
-  ( N = local(Id, Addr, _), !
-  ; N = name(Id, Addr, _), !
-  ; N = value(Id, Addr, _)
-  ), (var(Scope) -> Scope = local), !.
-validateVar(V, [N| Names], Scope, Vv) :-
-  ( N = rec(_, _), !, Scope = parent,
-      validateVar(V, Names, Scope, Vv)
-  ; validateVar(V, Names, Scope, Vv)
-  ), !.
-validateVar(_, [], _, _) :- fail.
+% validateVar(V, Names, Vv) :-
+%   validateVar(V, Names, Vv).
+validateVar(variable(Id, Addr), [N| _Names], V) :-
+  ( N = local(Id, Addr), !, V = variable(Addr)
+  ; N = name(Id, Addr), !, V = thunkCall(Addr)
+  ; N = value(Id, Addr), V = variable(Addr)
+  ).
+validateVar(variable(Id, Addr), [N| Names], Vv) :-
+  validateVar(variable(Id, Addr), Names, V), !,
+  ( N = par(_, _, _, _), !,
+      NewAddr = env(VAddr),
+      V =.. [Key, VAddr],
+      Vv =.. [Key, NewAddr]
+  ; Vv = V
+  ).
+
+validate(String, Validated) :-
+  parse(String, AST),
+  validateProgram(AST, Validated).
