@@ -33,11 +33,16 @@ lexer(Tokens) -->
 lexer([]) -->
   [].
 
+commentEnd -->
+  ( "*)", !
+  ; [_], commentEnd
+  ).
 
 whitespace -->
-  [Char], { code_type(Char, space) }, !,whitespace.
-whitespace -->
-  [].
+  ( "(*", !, commentEnd, whitespace
+  ; [Char], { code_type(Char, space) }, !, whitespace
+  ; []
+  ).
 
 digit(D) -->
   [D],
