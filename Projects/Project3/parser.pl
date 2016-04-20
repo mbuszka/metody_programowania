@@ -97,20 +97,23 @@ instruction(I) -->
   ).
 
 arithExpression(Exp) -->
-  term(First),
-  ( additiveOp(Op), !, arithExpression(Second),
-    { Exp =.. [Op, First, Second] }
-  ; [],
-    { Exp = First }
-  ).
+  term(First), arithExpression(First, Exp).
+
+arithExpression(Acc, Expr) -->
+  additiveOp(Op), !, term(Second),
+    { Acc1 =.. [Op, Acc, Second] },
+    arithExpression(Acc1, Expr).
+arithExpression(Acc, Acc) -->
+  [].
 
 term(T) -->
-  factor(First),
-  ( multiplicativeOp(Op), !, term(Second),
-    { T =.. [Op, First, Second] }
-  ; [],
-    { T = First }
-  ).
+  factor(First), term(First, T).
+term(Acc, T) -->
+  multiplicativeOp(Op), !, factor(Second),
+    { Acc1 =.. [Op, Acc, Second] },
+    term(Acc1, T).
+term(Acc, Acc) -->
+  [].
 
 factor(F) -->
   ( [tMinus], !, primary(P),
@@ -149,20 +152,22 @@ actualParametersSeq(Params) -->
   ).
 
 boolExpression(Bool) -->
-  conjunction(First),
-  ( [tOr], !, boolExpression(Rest),
-    { Bool = or(First, Rest) }
-  ; [],
-    { Bool = First }
-  ).
+  conjunction(First), boolExpression(First, Bool).
+boolExpression(Acc, Bool) -->
+  [tOr], !, conjunction(Rest),
+    { Acc1 = or(Acc, Rest) },
+    boolExpression(Acc1, Bool).
+boolExpression(Acc, Acc) -->
+  [].
 
 conjunction(Con) -->
-  condition(First),
-  ( [tAnd], conjunction(Rest),
-    { Con = and(First, Rest) }
-  ; [],
-    { Con = First }
-  ).
+  condition(First), conjunction(First, Con).
+conjunction(Acc, Con) -->
+  [tAnd], condition(Rest),
+    { Acc1 = and(Acc, Rest) },
+    conjunction(Acc1, Con).
+conjunction(Acc, Acc) -->
+  [].
 
 condition(Con) -->
   ( [tNot], !, relationalExpression(Exp),
@@ -194,6 +199,9 @@ multiplicativeOp(mul) -->
   [tTimes], !.
 multiplicativeOp(div) -->
   [tDiv],   !.
+multiplicativeOp(mod) -->
+  [tMod],   !.
+
 additiveOp(add) -->
   [tPlus],  !.
 additiveOp(sub) -->
