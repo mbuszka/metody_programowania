@@ -1,6 +1,6 @@
 % resolve indentifiers namespace
 
-validateProgram(proc(_, Addr, Args, B), proc(Addr, Args, Bv)) :-
+validateProgram(proc(_, Addr, Args, B), proc(Addr, 3, Args, Bv)) :-
   validateBlock(B, [], Bv).
 
 validateBlock(b(Ds, Ins), Names, b(Dsv, Insv)) :-
@@ -16,35 +16,35 @@ validateDeclarations(Ds, Names, NewNames, Dsv) :-
 
 validateDeclarations([], _, Names, Names, []).
 validateDeclarations([H|T], Cnt, Names, Ret, Dsv) :-
-  ( H = local(Id, Cnt), !,
+  ( H = local(_Id, Cnt), !,
       Cntr is Cnt - 1,
       % not(duplicateInScope(H, Names)).
       NewNames = [H| Names],
       Dsv = [local(Cnt)| Tv]
   ; H = proc(Id, Addr, Args, Block), !,
       Cntr is Cnt,
-      validateFormalParameters(Args, Argsv),
+      validateFormalParameters(Args, Argsv, ACnt),
       length(Args, ArgsC),
       append(Args, [par(Id, Addr, ArgsC, Args)| Names], BlockNames),
       validateBlock(Block, BlockNames, Blockv),
       NewNames = [proc(Id, Addr, ArgsC, Args)| Names],
-      Dsv = [proc(Addr, Argsv, Blockv)| Tv]
+      Dsv = [proc(Addr, ACnt, Argsv, Blockv)| Tv]
   ), validateDeclarations(T, Cntr, NewNames, Ret, Tv).
 
  % TODO check for duplicate names
 
-validateFormalParameters(Args, Argsv) :-
-  validateFormalParameters(Args, 3, Argsv).
+validateFormalParameters(Args, Argsv, Cnt) :-
+  validateFormalParameters(Args, 3, Argsv, Cnt).
 
-validateFormalParameters([], _, []).
-validateFormalParameters([H| T], Cnt, [Hv|Tv]) :-
+validateFormalParameters([], Cnt, [], Cnt).
+validateFormalParameters([H| T], Cnt, [Hv|Tv], RC) :-
   ( H = value(_Id, Cnt), !,
       Cntr is Cnt + 1,
       Hv = value(Cnt)
   ; H = name(_Id, Cnt),
       Cntr is Cnt + 2,
       Hv = name(Cnt)
-  ), validateFormalParameters(T, Cntr, Tv).
+  ), validateFormalParameters(T, Cntr, Tv, RC).
 
 validateInstructions([], _, []).
 validateInstructions([H|T], Names, [Hv|Tv]) :-

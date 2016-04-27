@@ -6,6 +6,10 @@
  % evaluating thunkCall will push result of calculation and its address,
  % so if thunk is only a reference it will properly point to a variable
 
+resolve(Program, Procedures) :-
+  validate(Program, Ast),
+  resolveThunksProc(Ast, Procedures).
+
 resolveThunksProcCall(procCall(Addr, Params), Thunks, procCall(Addr, ParamsT)) :-
   resolveThunksParams(Params, Thunks, ParamsT).
 
@@ -16,28 +20,33 @@ resolveThunksParams([H|T], Thunks, [HR|TR]) :-
     Thunks = Rest
   ; H = name(variable(Addr)), !,
     HR = referencePass(Addr),
-    Thunks = [proc(Addr, [], [], [return(variable(2))]) | Rest]
+    Thunks = [proc(Addr, 0, 0, [return(variable(-1))]) | Rest]
   ; H = name(Exp), !,
     HR = thunkPass(Addr),
-    Thunks = [proc(Addr, [], [], [return(Exp)]) | Rest]
+    Thunks = [proc(Addr, 0, 0, [return(Exp)]) | Rest]
   ; HR = H,
     Thunks = Rest
   ), resolveThunksParams(T, Rest, TR).
 
-resolveThunksProc(proc(Addr, Params, Block), proc(Addr, Params, Decl, Ins)) :-
-  resolveThunksBlock(Block, b(Decl, Ins)).
+resolveThunksProc(proc(Addr, ParamCnt, _Params, Block), AllProcs) :-
+  resolveThunksBlock(Block, Locals, Instr, Procs),
+  AllProcs = [proc(Addr, ParamCnt, Locals, Instr) | Procs].
 
-resolveThunksBlock(b(Ds, Ins), b(Dst, Inst)) :-
-  resolveThunksDeclarations(Ds, Dsr),
-  resolveThunksInstructions(Ins, Thunks, Inst),
-  append(Dsr, Thunks, Dst).
+resolveThunksBlock(b(Ds, Ins), Locals, Instr, AllProcs) :-
+  resolveThunksDeclarations(Ds, Locals, Procs),
+  resolveThunksInstructions(Ins, Thunks, Instr),
+  append(Procs, Thunks, AllProcs).
 
-resolveThunksDeclarations([], []).
-resolveThunksDeclarations([H|T], [HR|TR]) :-
-  ( H = proc(_, _, _), !,
-      resolveThunksProc(H, HR)
-  ; HR = H
-  ), resolveThunksDeclarations(T, TR).
+resolveThunksDeclarations([], 0, []).
+resolveThunksDeclarations([H|T], LocalsCnt, Procedures) :-
+  resolveThunksDeclarations(T, LC, PS),
+  ( H = proc(_, _, _, _), !,
+      resolveThunksProc(H, Procs),
+      append(Procs, PS, Procedures),
+      LocalsCnt = LC
+  ; LocalsCnt is LC + 1,
+    Procedures = PS
+  ).
 
 resolveThunksInstructions([], [], []).
 resolveThunksInstructions([H|T], Thunks, [HR| TR]) :-
