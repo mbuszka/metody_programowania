@@ -8,13 +8,12 @@ parse(Text, AST) :-
   phrase(program(AST), Tokens).
 
 program(AST) -->
-  [tProgram, tIdent(Id)], block(B),
-  { AST = proc(Id, _Addr, [], B) }.
+  [tProgram, tIdent(Id)], block(Declarations, Instructions),
+  { AST = proc(Id, [], Declarations, Instructions) }.
 
-block(Block) -->
+block(Flat, Instr) -->
   declarations(Decl), [tBegin], instructions(Instr), [tEnd],
-  { flatten(Decl, Flat),
-    Block = b(Flat, Instr) }.
+  { flatten(Decl, Flat) }.
 
 declarations(Declarations) -->
   ( declaration(First), !, declarations(Rest),
@@ -32,19 +31,20 @@ declarator(D) -->
   [tLocal], variables(V), { D = V }.
 
 variables(Vars) -->
-  variableIdent(variable(Id, Addr)),
+  variableIdent(variable(Id)),
   ( [tComma], !, variables(Rest),
-    { Vars = [local(Id, Addr)| Rest] }
+    { Vars = [local(Id)| Rest] }
   ; [],
-    { Vars = [local(Id, Addr)] }
+    { Vars = [local(Id)] }
   ).
 
 variableIdent(V) -->
-  [tIdent(Id)], { V = variable(Id, _Addr) }.
+  [tIdent(Id)], { V = variable(Id) }.
 
 procedure(P) -->
-  [tProcedure, tIdent(Id), tLPar], formalParameters(Args), [tRPar], block(B),
-  { P = proc(Id, _Addr, Args, B) }.
+  [tProcedure, tIdent(Id), tLPar], formalParameters(Args), [tRPar],
+  block(Declarations, Instructions),
+  { P = proc(Id, Args, Declarations, Instructions) }.
 
 formalParameters(Args) -->
   ( formalParametersSeq(Args), !
@@ -61,10 +61,10 @@ formalParametersSeq(Args) -->
   ).
 
 formalParameter(A) -->
-  ( variableIdent(variable(Id, Addr)), !,
-    { A = name(Id, Addr) }
-  ; [tValue], variableIdent(variable(Id, Addr)),
-    { A = value(Id, Addr) }
+  ( variableIdent(variable(Id)), !,
+    { A = name(Id) }
+  ; [tValue], variableIdent(variable(Id)),
+    { A = value(Id) }
   ).
 
 instructions(IS) -->
@@ -135,7 +135,7 @@ primary(P) -->
 
 procedureCall(Call) -->
   [tIdent(Id), tLPar], actualParameters(Params), [tRPar],
-  { Call = procCall(Id, _Addr, Params) }.
+  { Call = procCall(Id, Params) }.
 
 actualParameters(Params) -->
   ( actualParametersSeq(Params), !
