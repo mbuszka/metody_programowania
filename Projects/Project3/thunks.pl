@@ -1,136 +1,130 @@
- % resolve call by name actual arguments into thunks, which are added into
- % callers environment
- % by default they will return calculated value, if
- % a reference to variable is passed one can write into it,
- % otherwise behaviour is undefined
- % evaluating thunkCall will push result of calculation and its address,
- % so if thunk is only a reference it will properly point to a variable
+% resolveThunks works in two modes, first if given Flag as a free variable
+% it will try to find which call by name parameters should be passed as a thunk,
+% and which as a reference.
+% In second mode, given Flag = add_references it will set all free Type variables
+% to reference, works in conjunction with resolver
 
-resolve(Program, Procedures) :-
-  validate(Program, Ast),
-  resolveThunksProc(Ast, Procedures).
-
-resolveThunksProcCall(procCall(Addr, Params), Thunks, procCall(Addr, ParamsT)) :-
-  resolveThunksParams(Params, Thunks, ParamsT).
-
-resolveThunksParams([], [], []).
-resolveThunksParams([H|T], Thunks, [HR|TR]) :-
-  ( H = name(thunkCall(Addr)), !,
-    HR = thunkPass(Addr),
-    Thunks = Rest
-  ; H = name(variable(Addr)), !,
-    HR = referencePass(Addr),
-    Thunks = [proc(Addr, 0, 0, [return(variable(-1))]) | Rest]
-  ; H = name(Exp), !,
-    HR = thunkPass(Addr),
-    Thunks = [proc(Addr, 0, 0, [return(Exp)]) | Rest]
-  ; HR = H,
-    Thunks = Rest
-  ), resolveThunksParams(T, Rest, TR).
-
-resolveThunksProc(proc(Addr, ParamCnt, _Params, Block), AllProcs) :-
-  resolveThunksBlock(Block, Locals, Instr, Procs),
-  AllProcs = [proc(Addr, ParamCnt, Locals, Instr) | Procs].
-
-resolveThunksBlock(b(Ds, Ins), Locals, Instr, AllProcs) :-
-  resolveThunksDeclarations(Ds, Locals, Procs),
-  resolveThunksInstructions(Ins, Thunks, Instr),
-  append(Procs, Thunks, AllProcs).
-
-resolveThunksDeclarations([], 0, []).
-resolveThunksDeclarations([H|T], LocalsCnt, Procedures) :-
-  resolveThunksDeclarations(T, LC, PS),
-  ( H = proc(_, _, _, _), !,
-      resolveThunksProc(H, Procs),
-      append(Procs, PS, Procedures),
-      LocalsCnt = LC
-  ; LocalsCnt is LC + 1,
-    Procedures = PS
+resolver(List, Resolved) :-
+  resolveThunks(List, Flag, NewList),
+  ( var(Flag), !,
+    resolveThunks(NewList, add_references, Resolved)
+  ; Flag = resolved,
+    resolver(NewList, Resolved)
   ).
 
-resolveThunksInstructions([], [], []).
-resolveThunksInstructions([H|T], Thunks, [HR| TR]) :-
-  resolveThunksInstruction(H, ThunksH, HR),
+resolveThunks( [], _, []).
+resolveThunks( [ H | T ], Flag, [H | New] ) :-
+  H =.. [_, _, _Args, _Locals, Instr ],
+  resolveThunksInstructions(Instr, Thunks, Flag),
+  append(Thunks, T, All),
+  resolveThunks(All, Flag, New).
+
+resolveThunksProcCall(procCall(_Addr, Params), Thunks, Flag) :-
+  resolveThunksParams(Params, Thunks, Flag).
+
+resolveThunksParams([], [], _).
+resolveThunksParams([P | Params], Thunks, Flag) :-
+  ( P = value(_), !, Thunks = Thunks2
+  ; P = name(E, Type),
+    ( E = variable(_), !, Thunks = Thunks2
+    ; E = name(_, Type), !, Thunks = Thunks2,
+      ( var(Type) -> Type = Type
+      ; ( ground(Flag) -> ( Flag = resolved, !
+                          ; Flag = add_references )
+        ; true
+        )
+      )
+    ; E = procCall(Addr, Pars), !,  % maybe do something more efficient
+      ( var(Type) ->
+        Type = thunk(Addr), Flag = resolved,
+        resolveThunksProcCall(procCall(Addr, Pars), Thunks1, Flag),
+        append([thunk(Addr, [], [], [return(E)]) | Thunks1], Thunks2, Thunks)
+      ; Type = thunk(_), Thunks = Thunks2
+      )
+    ; (var(Type) ->
+        Type = thunk(Addr), resolveThunksExpr(E, Thunks1, Flag),
+        append([thunk(Addr, [], [], [return(E)]) | Thunks1], Thunks2, Thunks),
+        Flag = resolved
+      ; Type = thunk(_), Thunks = Thunks2
+      )
+    )
+  ), resolveThunksParams(Params, Thunks2, Flag).
+
+resolveThunksInstructions([], [], _).
+resolveThunksInstructions([H|T], Thunks, Flag) :-
+  resolveThunksInstruction(H, ThunksH, Flag),
   append(ThunksH, ThunksT, Thunks),
-  resolveThunksInstructions(T, ThunksT, TR).
+  resolveThunksInstructions(T, ThunksT, Flag).
 
-resolveThunksInstruction(I, Thunks, Iv) :-
+resolveThunksInstruction(I, Thunks, Flag) :-
   ( I = if(Bool, Then, Else), !,
-      resolveThunksBool(Bool, ThunksB, Boolv),
-      resolveThunksInstructions(Then, ThunksT, Thenv),
-      resolveThunksInstructions(Else, ThunksE, Elsev),
-      append([ThunksB, ThunksT, ThunksE], Thunks),
-      Iv = if(Boolv, Thenv, Elsev)
+      resolveThunksBool(Bool, ThunksB, Flag),
+      resolveThunksInstructions(Then, ThunksT, Flag),
+      resolveThunksInstructions(Else, ThunksE, Flag),
+      append([ThunksB, ThunksT, ThunksE], Thunks)
   ; I = if(Bool, Then), !,
-      resolveThunksBool(Bool, ThunksB, Boolv),
-      resolveThunksInstructions(Then, ThunksI, Thenv),
-      append(ThunksB, ThunksI, Thunks),
-      Iv = if(Boolv, Thenv)
+      resolveThunksBool(Bool, ThunksB, Flag),
+      resolveThunksInstructions(Then, ThunksI, Flag),
+      append(ThunksB, ThunksI, Thunks)
   ; I = while(Bool, Ins), !,
-      resolveThunksBool(Bool, ThunksB, Boolv),
-      resolveThunksInstructions(Ins, ThunksI, Insv),
-      append(ThunksB, ThunksI, Thunks),
-      Iv = while(Boolv, Insv)
+      resolveThunksBool(Bool, ThunksB, Flag),
+      resolveThunksInstructions(Ins, ThunksI, Flag),
+      append(ThunksB, ThunksI, Thunks)
   ; I = discardReturn(Call), !,
-      resolveThunksProcCall(Call, Thunks, Callv),
-      Iv = discardReturn(Callv)
+      resolveThunksProcCall(Call, Thunks, Flag)
   ; I = return(Exp), !,
-      resolveThunksExpr(Exp, Thunks, Expv),
-      Iv = return(Expv)
+      resolveThunksExpr(Exp, Thunks, Flag)
   ; I = ioRead(V), !,
-      resolveThunksVar(V, Thunks, Vv),
-      Iv = ioRead(Vv)
+    ( V = name(_Addr, Type), !,
+      ( var(Type) -> Type = reference, Flag = resolved
+      ; Type = reference )
+    ; V = V
+    )
   ; I = ioWrite(Exp), !,
-      resolveThunksExpr(Exp, Thunks, Expv),
-      Iv = ioWrite(Expv)
+      resolveThunksExpr(Exp, Thunks, Flag)
   ; I = assgn(V, Exp),
-      resolveThunksExpr(Exp, Thunks, Expv),
-      ( V = thunkCall(Addr), !,
-        Vr = thunkWrite(Addr)
-      ; Vr = V
-      ),
-      Iv = assgn(Vr, Expv)
+      resolveThunksExpr(Exp, Thunks, Flag),
+      ( V = name(_Addr, Type), !,
+        ( var(Type) -> Type = reference, Flag = resolved
+        ; Type = reference )
+      ; V = V
+      )
   ).
 
-resolveThunksExpr(Expr, Thunks, Exprv) :-
+resolveThunksExpr(Expr, Thunks, Flag) :-
   ( Expr = const(_), !,
-      Thunks = [],
-      Exprv = Expr
+      Thunks = []
   ; Expr = variable(_Addr), !,
-      Thunks = [],
-      Exprv = Expr
-  ; Expr = thunkCall(_Addr), !,
-      Thunks = [],
-      Exprv = Expr
+      Thunks = []
+  ; Expr = name(_Addr, Type), !,
+      ( var(Type), ground(Flag), Flag = add_references ->
+        Type = reference
+      ; true
+      ),
+      Thunks = []
   ; Expr = procCall(_Addr, _Params), !,
-      resolveThunksProcCall(Expr, Thunks, Exprv)
+      resolveThunksProcCall(Expr, Thunks, Flag)
   ; Expr = neg(E), !,
-      resolveThunksExpr(E, Thunks, Ev),
-      Exprv = neg(Ev)
-  ; Expr =.. [Op, Left, Right], !,
-      resolveThunksExpr(Left, ThunksL, Leftv),
-      resolveThunksExpr(Right, ThunksR, Rightv),
-      append(ThunksL, ThunksR, Thunks),
-      Exprv =.. [Op, Leftv, Rightv]
+      resolveThunksExpr(E, Thunks, Flag)
+  ; Expr =.. [_, Left, Right], !,
+      resolveThunksExpr(Left, ThunksL, Flag),
+      resolveThunksExpr(Right, ThunksR, Flag),
+      append(ThunksL, ThunksR, Thunks)
   ).
 
-resolveThunksBool(Bool, Thunks, Boolv) :-
+resolveThunksBool(Bool, Thunks, Flag) :-
   ( Bool = not(B), !,
-      resolveThunksBool(B, Thunks, Bv),
-      Boolv = not(Bv)
+      resolveThunksBool(B, Thunks, Flag)
   ; Bool = and(Left, Right), !,
-      resolveThunksBool(Left, ThunksL, Leftv),
-      resolveThunksBool(Right, ThunksR, Rightv),
-      append(ThunksL, ThunksR, Thunks),
-      Boolv = and(Leftv, Rightv)
+      resolveThunksBool(Left, ThunksL, Flag),
+      resolveThunksBool(Right, ThunksR, Flag),
+      append(ThunksL, ThunksR, Thunks)
   ; Bool = or(Left, Right), !,
-      resolveThunksBool(Left, ThunksL, Leftv),
-      resolveThunksBool(Right, ThunksR, Rightv),
-      append(ThunksL, ThunksR, Thunks),
-      Boolv = or(Leftv, Rightv)
-  ; Bool =.. [Op, Left, Right], !,
-      resolveThunksExpr(Left, ThunksL, Leftv),
-      resolveThunksExpr(Right, ThunksR, Rightv),
-      append(ThunksL, ThunksR, Thunks),
-      Boolv =.. [Op, Leftv, Rightv]
+      resolveThunksBool(Left, ThunksL, Flag),
+      resolveThunksBool(Right, ThunksR, Flag),
+      append(ThunksL, ThunksR, Thunks)
+  ; Bool =.. [_Op, Left, Right], !,
+      resolveThunksExpr(Left, ThunksL, Flag),
+      resolveThunksExpr(Right, ThunksR, Flag),
+      append(ThunksL, ThunksR, Thunks)
   ).

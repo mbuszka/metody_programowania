@@ -5,11 +5,10 @@ validateProgram(proc(_, [], Ds, Ins)) -->
   validateDeclarations(Ds, [], [], NewNames, 0, Locals),
   { validateInstructions(Ins, NewNames, Insv) }.
 
-validateProc(proc(_, Args, Ds, Ins), Names,
-             [ proc(Id, Addr, ArgsC) | Names ]) -->
+validateProc(proc(Id, Args, Ds, Ins), Names,
+             [ proc(Id, Addr, Argsv) | Names ]) -->
   { validateFormalParameters(Args, Argsv, Names1),
-    length(Args, ArgsC),
-    append(Names1, [ par(Id, Addr, ArgsC) | Names ], Names2) },
+    append(Names1, [ par(Id, Addr, Argsv) | Names ], Names2) },
   [ proc(Addr, Argsv, Locals, Insv) ],
   validateDeclarations(Ds, Names2, Names1, NewNames, 0, Locals),
   { validateInstructions(Ins, NewNames, Insv) }.
@@ -122,8 +121,8 @@ validateProcCall(procCall(Id, Params), Names, procCall(Addr, Paramsv)) :-
   validateActualParams(Params, Args, Names, Paramsv).
 
 validateProcId(Id, ParamsC, [N| _], Args, NewAddr) :-
-  ( N = proc(Id, NewAddr, ParamsC), !, length(Args, ParamsC)
-  ; N = par(Id, Addr, ParamsC), length(Args, ParamsC), NewAddr = env(Addr)
+  ( N = proc(Id, NewAddr, Args), !, length(Args, ParamsC)
+  ; N = par(Id, Addr, Args), length(Args, ParamsC), NewAddr = env(Addr)
   ), !.
 validateProcId(Id, ParamsC, [N| Names], Args, NewAddr) :-
   ( N = par(_, _, _), !, NewAddr = env(RetAddr)
@@ -132,19 +131,19 @@ validateProcId(Id, ParamsC, [N| Names], Args, NewAddr) :-
   validateProcId(Id, ParamsC, Names, Args, RetAddr).
 
 validateActualParams([], _, _, []).
-validateActualParams([H| T], [P|Params], Names, [Hv| Tv]) :-
+validateActualParams([H| T], [A|Args], Names, [Hv| Tv]) :-
   validateExpr(H, Names, Expv),
-  ( P = name(_, _, Type), !,
-    Hv = name(Type, Expv)
-  ; P = value(_,_),
+  ( A = name(_, Type), !,
+    Hv = name(Expv, Type)
+  ; A = value(_),
     Hv = value(Expv)),
-  validateActualParams(T, Params, Names, Tv).
+  validateActualParams(T, Args, Names, Tv).
 
 % validateVar(V, Names, Vv) :-
 %   validateVar(V, Names, Vv).
 validateVar(variable(Id), [N| _Names], V) :-
   ( N = local(Id, Addr), !, V = variable(Addr)
-  ; N = name(Id, Addr, Type), !, V = name(Type, Addr)
+  ; N = name(Id, Addr, Type), !, V = name(Addr, Type)
   ; N = value(Id, Addr), V = variable(Addr)
   ).
 validateVar(variable(Id), [N| Names], Vv) :-

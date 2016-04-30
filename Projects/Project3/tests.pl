@@ -84,11 +84,61 @@ testParser5(Result) :-
   end',
   Result).
 
+testParser6(Result) :-
+  parse('
+  program Test6
+    local n, m
+    procedure f (x)
+      procedure g (y)
+      begin
+        return y + 1
+      end
+    begin
+      return g(x) + 1
+    end
+  begin
+    write f (n)
+  end',
+  Result).
+
+testParser7(Result) :-
+  parse('
+  program test7
+    local a
+    procedure f (x1, x2, x3, x4, x5)
+      local y
+    begin
+      (*x1 := 4;*)
+      call f (y, x1, x2, x3, x4)
+    end
+  begin
+    call f (a*a, a, a, a, a)
+  end',
+  Result).
+
+testParser8(Result) :-
+  parse('
+  program test7
+    local a
+    procedure f (x1, x2, x3, x4, x5)
+      local y
+    begin
+      x1 := 4;
+      call f (x2, x3, x4, x5, y)
+    end
+  begin
+    call f (a, a, a, a, a)
+  end',
+  Result).
+
 testNamespace1(R) :- testParser1(A), phrase(validateProgram(A), R).
 testNamespace2(R) :- testParser2(A), phrase(validateProgram(A), R).
 testNamespace3(R) :- testParser3(A), phrase(validateProgram(A), R).
 testNamespace4(R) :- testParser4(A), phrase(validateProgram(A), R).
 testNamespace5(R) :- testParser5(A), phrase(validateProgram(A), R).
+testNamespace6(R) :- testParser6(A), phrase(validateProgram(A), R).
+testNamespace7(R) :- testParser7(A), phrase(validateProgram(A), R).
+testNamespace8(R) :- testParser8(A), phrase(validateProgram(A), R).
 
 test1 -->
   generateHeader,
