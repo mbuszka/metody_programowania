@@ -4,12 +4,12 @@
 % In second mode, given Flag = add_references it will set all free Type variables
 % to reference, works in conjunction with deduce
 
-deduce(List) :-
+deduceTypes(List) :-
   deduceTypes(List, Flag),
   ( var(Flag), !,
     deduceTypes(List, add_references)
   ; Flag = resolved,
-    deduce(List)
+    deduceTypes(List)
   ).
 
 deduceTypes( [], _).

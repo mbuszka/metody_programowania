@@ -22,8 +22,8 @@ testParser2(Result) :-
     read x;
     read y;
     while y <> 0 do
-      t := x mod y;
-      y := x;
+      t := y;
+      y := x mod y;
       x := t
     done;
     write y
@@ -213,8 +213,17 @@ testAsm5_ -->
   [ const(0), syscall ].
 
 testAsm6(Procs, Asm) :-
-  validate('program Test begin write 17 end', Procs),
-  resolver(Procs, Resolved),
+  validate('program Test local x begin x := 5; write x + 10; write 4 mod 3 end', Procs),
+  deduceTypes(Procs),
+  generateThunks(Procs, Resolved),
+  phrase(generateProgram(Resolved), Asm),
+  assemble(Asm, Words),
+  saveHex(Words, 'test/test.hex').
+
+testAsm7(Procs, Asm) :-
+  validate('program Test local a,b begin  a := 5; b := 10; if a > b then write a else write b mod a fi end', Procs),
+  deduceTypes(Procs),
+  generateThunks(Procs, Resolved),
   phrase(generateProgram(Resolved), Asm),
   assemble(Asm, Words),
   saveHex(Words, 'test/test.hex').

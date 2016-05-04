@@ -1,3 +1,6 @@
+generateThunks(Procedures, All) :-
+  phrase(generateThunks(Procedures), All).
+
 generateThunks([]) --> [].
 generateThunks([proc(Addr, Args, Locals, Instructions) | T]) -->
   { length(Args, ArgsC), length(Locals, LocalC) },
