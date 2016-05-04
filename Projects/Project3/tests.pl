@@ -140,32 +140,81 @@ testNamespace6(R) :- testParser6(A), phrase(validateProgram(A), R).
 testNamespace7(R) :- testParser7(A), phrase(validateProgram(A), R).
 testNamespace8(R) :- testParser8(A), phrase(validateProgram(A), R).
 
-test1 -->
-  generateHeader,
+testAsm1(Asm) :- phrase(testAsm1_, Asm), !, assemble(Asm, Words), !, saveHex(Words, 'test/test.hex').
+testAsm2(Asm) :- phrase(testAsm2_, Asm), !, assemble(Asm, Words), !, saveHex(Words, 'test/test.hex').
+testAsm3(Asm) :- phrase(testAsm3_, Asm), !, assemble(Asm, Words), !, saveHex(Words, 'test/test.hex').
+testAsm4(Asm) :- phrase(testAsm4_, Asm), !, assemble(Asm, Words), !, saveHex(Words, 'test/test.hex').
+testAsm5(Asm) :- phrase(testAsm5_, Asm), !, assemble(Asm, Words), !, saveHex(Words, 'test/test.hex').
+
+testAsm1_ -->
+  generateHeader, !,
   load_stack_ptr, [ swapd, const(2), syscall ],
   load_base_ptr, [ swapd, const(2), syscall ],
+  push, load_stack_ptr, [ swapd, const(2), syscall ],
+  push, load_stack_ptr, [ swapd, const(2), syscall ],
+  push, load_stack_ptr, [ swapd, const(2), syscall ],
+  pop, load_stack_ptr, [ swapd, const(2), syscall ],
+  pop, load_stack_ptr, [ swapd, const(2), syscall ],
+  pop, load_stack_ptr, [ swapd, const(2), syscall ],
   [ const(0), syscall ].
 
-test2 -->
-  generateHeader,
+testAsm2_ -->
+  generateHeader, !,
   generateInstruction(ioWrite(const(10)), 15),
+  load_stack_ptr, [ swapd, const(2), syscall ],
   [ const(0), syscall ].
 
-test3 -->
-  generateHeader,
+testAsm3_ -->
+  generateHeader, !,
+  [ const(3) ], push,
+  [ const(4) ], push,
+  [ const(5) ], push,
+  top, [ swapd, const(2), syscall ],
+  pop, [ const(2), syscall ],
+  top, [ swapd, const(2), syscall ],
+  pop, [ const(2), syscall ],
+  top, [ swapd, const(2), syscall ],
+  pop, [ const(2), syscall ],
+  [ const(6) ], push,
+  top, [ swapd, const(2), syscall ],
+  load_stack_ptr, [ swapd, const(2), syscall ],
+  [ const(7) ], update_top,
+  load_stack_ptr, [ swapd, const(2), syscall ],
+  top, [ swapd, const(2), syscall ],
+  [ const(0), syscall ].
+
+testAsm4_ -->
+  generateHeader, !,
+  % load_stack_ptr, [ swapd, const(2), syscall ],
   generateInstruction(ioWrite(add(const(5), const(17))), tmp),
-  load_stack_ptr, offset(-10), [ swapd, const(2), syscall ],
+  % load_stack_ptr, [ swapd, const(2), syscall ],
+  [ const(3) ], push,
+  [ const(4) ], push,
+  jump_static_links(-1, Offset),
+  offset(Offset),
+  [ swapd, const(2), syscall ],
+  [ load ], push, top, [ swapd, const(2), syscall ],
+  generateExpression(variable(-1)),
+  top, [ swapd, const(2), syscall ],
+  generateInstruction(ioWrite(add(variable(-1), variable(-2))), tmp),
   [ const(0), syscall ].
 
-test5 -->
-  generateHeader,
+
+testAsm5_ -->
+  generateHeader, !,
+  [ label(_), label(_), label(_), label(_) ],
+  generateInstruction(ioWrite(add(const(1340), const(2))), tmp),
   [ const(Label), jump],
-  [ const(10), swapd, const(2), syscall ], % should not execute
-  [ label(Label), const(15), swapd, const(2), syscall ],
+  % generateInstruction(ioWrite(const(12)), tmp),
+  generateExpression(add(const(20), const(102))), top,
+  [ swapd, const(2), syscall, nop, nop, nop ],
+  [ label(Label), const(15) ],
+  generateInstruction(ioWrite(add(const(30), const(12))), tmp),
   [ const(0), syscall ].
 
-test4(Asm) :-
-  resolve('program Test begin write 17 end', Procs),
-  phrase(generateProgram(Procs), Asm),
+testAsm6(Procs, Asm) :-
+  validate('program Test begin write 17 end', Procs),
+  resolver(Procs, Resolved),
+  phrase(generateProgram(Resolved), Asm),
   assemble(Asm, Words),
-  printHex(Words).
+  saveHex(Words, 'test/test.hex').

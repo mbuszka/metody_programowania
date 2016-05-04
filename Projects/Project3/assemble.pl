@@ -18,10 +18,10 @@ assemble([H|T], Acc, Const, LocalCnt, ProgramCnt) -->
   ; { H = branchn,  !, NewAcc is Acc + 7,   LC is LocalCnt + 1, NewConst = Const }
   ; { H = jump,     !, TmpAcc is Acc + 8,
       TC is LocalCnt + 1,
-      pad(TmpAcc, TC, NewAcc),            LC is 4, NewConst = Const
+      pad(TmpAcc, TC, NewAcc),              LC is 4, NewConst = Const
     }
   ; { H = const(V), !, NewAcc is Acc + 9,
-      append(Const, [V], NewConst),       LC is LocalCnt + 1 }
+      append(Const, [V], NewConst),         LC is LocalCnt + 1 }
   ; { H = add,      !, NewAcc is Acc + 10,  LC is LocalCnt + 1, NewConst = Const }
   ; { H = sub,      !, NewAcc is Acc + 11,  LC is LocalCnt + 1, NewConst = Const }
   ; { H = mul,      !, NewAcc is Acc + 12,  LC is LocalCnt + 1, NewConst = Const }
@@ -30,7 +30,7 @@ assemble([H|T], Acc, Const, LocalCnt, ProgramCnt) -->
   ; { H = nand,     !, NewAcc is Acc + 15,  LC is LocalCnt + 1, NewConst = Const }
   ; { H = label(Addr), !,
       ( LocalCnt = 0, !,
-        Addr = ProgramCnt,
+        Addr = PC,
         LC is LocalCnt,
         NewAcc is Acc
       ; TC is LocalCnt + 1,
@@ -39,10 +39,10 @@ assemble([H|T], Acc, Const, LocalCnt, ProgramCnt) -->
         Addr = PC
       ), NewConst = Const
     }
-  ),
+  ), !,
   ( { LC = 4 }, !,
     [ NewAcc ], NewConst,
-    { RC is 0, length(Const, CC),
+    { RC is 0, length(NewConst, CC),
       PC is ProgramCnt + CC + 1,
       A is 0,
       C = []
@@ -64,6 +64,16 @@ compile(Text) :-
   phrase(generateProgram(V), Asm),
   phrase(assemble(Asm, 0, [], 0, 0), B),
   printHex(B).
+
+saveHex(Words, FileName) :-
+  open(FileName, write, File),
+  saveHex_(Words, File),
+  close(File).
+
+saveHex_([], _File).
+saveHex_([H|T], File) :-
+  format(File, '~|~`0t~16r~4+~n', H),
+  saveHex_(T, File).
 
 printHex([]).
 printHex([H|T]) :-
