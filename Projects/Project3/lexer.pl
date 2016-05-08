@@ -1,5 +1,8 @@
 %  lexer
 
+lex(CodesList, TokenList) :-
+  phrase(lexer(TokenList), CodesList).
+
 lexer(Tokens) -->
   whitespace,
   ( ":=",       !, { Token = tAssgn }
@@ -28,6 +31,7 @@ lexer(Tokens) -->
       { Token = tUnknown }
   ),
   !,
+  whitespace,
   { Tokens = [Token| TList] },
   lexer(TList).
 lexer([]) -->

@@ -2,10 +2,8 @@
 
 :- use_module(library(lists)).
 
-parse(Text, AST) :-
-  atom_codes(Text, Codes),
-  phrase(lexer(Tokens), Codes),
-  phrase(program(AST), Tokens).
+parse(TokenList, AST) :-
+  phrase(program(AST), TokenList).
 
 program(AST) -->
   [tProgram, tIdent(Id)], block(Declarations, Instructions),
@@ -177,9 +175,9 @@ condition(Con) -->
   ).
 
 relationalExpression(Expr) -->
-  ( [tLPar], !, boolExpression(Expr), [tRPar]
-  ; arithExpression(Left), relationalOperator(Op), arithExpression(Right),
+  ( arithExpression(Left), relationalOperator(Op), arithExpression(Right),
     { Expr =.. [Op, Left, Right] }
+  ; [tLPar], !, boolExpression(Expr), [tRPar]
   ).
 
 relationalOperator(lt) -->

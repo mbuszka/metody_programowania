@@ -158,6 +158,5 @@ validateVar(variable(Id), [N| Names], Vv) :-
   ; Vv = V
   ).
 
-validate(String, Validated) :-
-  parse(String, AST),
+validate(AST, Validated) :-
   phrase(validateProgram(AST), Validated).

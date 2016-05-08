@@ -1,4 +1,5 @@
 generateThunks(Procedures, All) :-
+  deduceTypes(Procedures),
   phrase(generateThunks(Procedures), All).
 
 generateThunks([]) --> [].

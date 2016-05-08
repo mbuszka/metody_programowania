@@ -44,7 +44,7 @@ generateProcedures([H | T]) -->
 generateProcedure(proc(Addr, ArgC, LocalC, Instructions)) -->
   [ label(Addr) ],          % set label
   [ const(LocalC), swapd ],
-  load_stack_ptr, [ add ], store_stack_ptr,         % set stack_ptr on top of the locals
+  load_stack_ptr, [ sub ], store_stack_ptr,         % set stack_ptr on top of the locals
   generateInstructions(Instructions, End),
   [ const(0x0000) ], store_ret_reg,                 % set return value to 0 if control reaches end of procedure
   [ label(End) ],
@@ -125,12 +125,12 @@ generateBool(Bool, True, False) -->
     [ swapa, const(True), swapa ],
     [ branchz, const(False), jump ]
   ; { Bool = nq(Left, Right) }, !,
-    generateBool(not(eq(Left, Right)), True, False)
+    generateBool(eq(Left, Right), False, True)
   ; { Bool = gt(Left, Right) }, !,
     generateExpression(sub(Left, Right)),
-    top, [ swapd ], pop, [ swapd ],
-    [ swapa, const(False), swapa ],
-    [ branchn, const(True), jump ]
+    top, [ swapd ], pop, [ const(0), sub ],
+    [ swapa, const(True), swapa ],
+    [ branchn, const(False), jump ]
   ; { Bool = gq(Left, Right) }, !,
     generateBool(not(lt(Left, Right)), True, False)
   ; { Bool = lt(Left, Right) }, !,

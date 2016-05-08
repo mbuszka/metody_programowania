@@ -58,24 +58,3 @@ pad(Acc, Lc, Ret) :-
   NewAcc is 16 * Acc,
   NewLc is Lc + 1,
   pad(NewAcc, NewLc, Ret).
-
-compile(Text) :-
-  resolve(Text, V),
-  phrase(generateProgram(V), Asm),
-  phrase(assemble(Asm, 0, [], 0, 0), B),
-  printHex(B).
-
-saveHex(Words, FileName) :-
-  open(FileName, write, File),
-  saveHex_(Words, File),
-  close(File).
-
-saveHex_([], _File).
-saveHex_([H|T], File) :-
-  format(File, '~|~`0t~16r~4+~n', H),
-  saveHex_(T, File).
-
-printHex([]).
-printHex([H|T]) :-
-  format('~|~`0t~16r~4+~n', H),
-  printHex(T).
