@@ -1,0 +1,10 @@
+program Test5
+  local n, m
+  procedure f (x, value y)
+  begin
+    n := n + x;
+    m := x + y
+  end
+begin
+  n := f(4,4)
+end

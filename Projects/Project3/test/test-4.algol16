@@ -1,0 +1,16 @@
+program Jensen
+  procedure sum (expr, index)
+    local result
+  begin
+    result := 0;
+    while index > 0 do
+      result := result + expr;
+      index := index - 1
+    done;
+    return result
+  end
+  local n
+begin
+  n := 5;
+  write sum (n * n + 1, n)
+end

@@ -1,0 +1,14 @@
+#!/usr/bin/env swipl
+
+:- initialization main.
+
+main :-
+  load_files([lexer, parser, namespace_resolver,
+                                assemble, assembly_generator, thunk_generator,
+                                type_resolver, tests, interface]),
+  current_prolog_flag(argv, [FileName]),
+  compileFile(FileName, _, _, _),
+  halt.
+main :-
+  halt(1),
+  print('error').

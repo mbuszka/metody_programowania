@@ -1,0 +1,11 @@
+program test7
+  local a
+  procedure f (x1, x2, x3, x4, x5)
+    local y
+  begin
+    (*x1 := 4;*)
+    call f (y, x1, x2, x3, x4)
+  end
+begin
+  call f (a*a, a, a, a, a)
+end
