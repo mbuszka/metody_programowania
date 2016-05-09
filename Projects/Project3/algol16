@@ -1,3 +1,2 @@
 #!/bin/bash
-cd "${BASH_SOURCE%/*}"
-./hex $1 | xxd -p -r > $2
+/home/mbuszka/workspace/metody_programowania/Projects/Project3/hex $1 | xxd -p -r > $2

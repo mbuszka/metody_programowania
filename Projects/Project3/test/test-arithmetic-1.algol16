@@ -1,0 +1,18 @@
+program test_arithmetic
+begin
+  write 0;
+  write 0 + 1;
+  write 3 - 1;
+  write 6 div 2;
+  write 2 * 2;
+  write 15 mod 10;
+  write 2 + 5 - 1;
+  write 2 * 7 - 7;
+  write 14 div 7 * 4;
+  write 10 * 5 mod 41;
+  write (3 * 4) - 2;
+  write 14 * 8 div 10;
+  write (123 + 2) div 5 mod (13);
+  write ((207 - 5) * 2 - 44) div 30 + (4 mod 3);
+  write (-15 + 1) * (-1)
+end

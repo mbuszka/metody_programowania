@@ -1,6 +1,6 @@
 #!/bin/bash
 scriptDir=$(dirname -- "$(readlink -e -- "$BASH_SOURCE")")
-algol16 "$scriptDir/test-$1.algol16" "$scriptDir/test-$1.sextium"
-echo "$scriptDir/test-$1.sextium"
-sextium "$scriptDir/test-$1.sextium"
+algol16 "$scriptDir/$1" "$scriptDir/${1%.algol16}.sextium"
+echo "$scriptDir/$1"
+sextium "$scriptDir/${1%.algol16}.sextium"
 # rm "test-$1.sextium"

@@ -3,9 +3,17 @@
 :- initialization main.
 
 main :-
-  load_files([lexer, parser, namespace_resolver,
-                                assemble, assembly_generator, thunk_generator,
-                                type_resolver, tests, interface]),
+  load_files(
+    ['/home/mbuszka/workspace/metody_programowania/Projects/Project3/lexer.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/parser.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/namespace_resolver.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/assemble.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/assembly_generator.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/thunk_generator.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/type_resolver.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/tests.pl',
+     '/home/mbuszka/workspace/metody_programowania/Projects/Project3/interface.pl'
+     ]),
   current_prolog_flag(argv, [FileName]),
   compileFile(FileName, _, _, _),
   halt.
