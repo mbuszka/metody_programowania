@@ -1,0 +1,22 @@
+program test_procedures
+local a
+procedure f(value x, value y)
+  procedure g(value z)
+    begin
+      write z + 1;
+      write a;
+      return z * 2 + 1
+    end
+  local b
+  begin
+    write a;
+    a := 4;
+    b := x * y - 4;
+    write b;
+    write g(b);
+    return b * 3
+  end
+begin
+  a := 1;
+  write f ( 2, 3 )
+end

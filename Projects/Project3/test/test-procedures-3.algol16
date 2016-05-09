@@ -1,0 +1,8 @@
+program test_procedures
+procedure fuck (value n)
+  begin
+    if n = 0 then return 1 else return fuck (n - 1) * n fi
+  end
+begin
+  write fuck(7)
+end

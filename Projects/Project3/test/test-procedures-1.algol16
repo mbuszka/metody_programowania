@@ -1,0 +1,17 @@
+program test_procedures
+procedure f()
+  local x,y
+  begin
+    x := 1;
+    y := 2;
+    write x;
+    write y;
+    write x + y;
+    if 1 < 2 then write x + y + 1 fi;
+    return 5
+  end
+local z
+begin
+  z := f();
+  write z
+end

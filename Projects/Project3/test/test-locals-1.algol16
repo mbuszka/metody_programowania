@@ -1,0 +1,26 @@
+program test_local
+local a,b,c,t
+begin
+  a := 1;
+  b := 2;
+  c := 3;
+  write a;
+  write b;
+  write a + b;
+  t := a + c;
+  write t;
+  read t;
+  write t;
+  t := a + b + c;
+  write t;
+  t := ( 2 * a * t - c * a ) - 2;
+  write t;
+  if c < 5 then t :=   8 else t :=  -8 fi;
+  write t;
+  if 5 < c then t :=  -9 else t :=   9 fi;
+  write t;
+  if a < c then t :=  10 else t := -10 fi;
+  write t;
+  if c < a then t := -11 else t :=  11 fi;
+  write t
+end
