@@ -1,0 +1,15 @@
+program test_procedures
+local n
+procedure f (value x)
+  procedure g ()
+    begin
+      call f (1)
+    end
+  begin
+    if x <> 1 then call g() fi;
+    write n - x
+  end
+begin
+  n := 2;
+  call f (0)
+end

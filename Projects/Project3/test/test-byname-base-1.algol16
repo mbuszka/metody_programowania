@@ -1,0 +1,10 @@
+program test_byname
+local n
+procedure f (x)
+  begin
+    write x
+  end
+begin
+  n := 5;
+  call f (n * n)
+end

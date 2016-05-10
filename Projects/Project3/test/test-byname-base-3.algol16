@@ -1,0 +1,14 @@
+program test_byname
+local n
+procedure increment (x)
+  begin
+    write x;
+    x := x + 1
+  end
+begin
+  n := 1;
+  call increment(n);
+  while n < 10 do
+    call increment(n)
+  done
+end

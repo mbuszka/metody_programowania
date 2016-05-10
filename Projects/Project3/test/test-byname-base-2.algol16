@@ -1,0 +1,19 @@
+program test_byname
+local n
+procedure f (x)
+  begin
+    write x
+  end
+procedure one ()
+begin
+  write 1;
+  return 1
+end
+begin
+  call f (one ());
+  n := 2;
+  call f (n);
+  call f (n + 1);
+  call f (n * n);
+  call f (n  * n + one ())
+end

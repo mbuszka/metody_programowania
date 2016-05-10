@@ -1,0 +1,22 @@
+program byname_test
+procedure f (x)
+  procedure g (y)
+    procedure h ()
+      begin
+        call f (y)
+      end
+    begin
+      call h ()
+    end
+  local n
+  begin
+    n := 2;
+    if x > 0 then
+      write 1
+    else
+      call g (n * n)
+    fi
+  end
+begin
+  call f (0)
+end
