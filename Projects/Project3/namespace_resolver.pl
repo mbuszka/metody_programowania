@@ -150,8 +150,8 @@ validateVar(variable(Id), [N| Names], Vv) :-
   validateVar(variable(Id), Names, V), !,
   ( N = par(_, _, _), !,
       NewAddr = env(Vaddr),
-      ( V = name(Type, Vaddr),
-        Vv = name(Type, NewAddr)
+      ( V = name(Vaddr, Type),
+        Vv = name(NewAddr, Type)
       ; V = variable(Vaddr),
         Vv = variable(NewAddr)
       )

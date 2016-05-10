@@ -24,14 +24,10 @@ generateThunksParams([H | T], [HT | TT], [HC | TC]) -->
     { HT = reference(VThunk),
       HC = reference(VClean) }
   ; { H = name(Exp, thunk) }, !,
-    generateThunksExpr(Exp, ExpThunk, ExpClean),
-    ( { ExpClean = thunk(_Addr), !,
-      HT = ExpThunk,
-      HC = ExpClean }
-    ; [ proc(Addr, 0, 0, [ return(ExpThunk) ]) ],
+    generateThunksExpr(Exp, ExpThunk, _ExpClean),
+    [ proc(Addr, 0, 0, [ return(ExpThunk) ]) ],
     { HT = thunk(Addr),
       HC = thunk(Addr) }
-    )
   ),
   generateThunksParams(T, TT, TC).
 

@@ -51,33 +51,35 @@ generateProcedure(proc(Addr, ArgC, LocalC, Instructions)) -->
   { StackPtrOffset is ArgC + 3 },
   load_base_ptr, offset(StackPtrOffset), store_stack_ptr, % restore stack_ptr
   load_base_ptr, offset(0x0002), [ swapa, load ],       % store return addr
-  % [ swapd, const(2), syscall, swapd ],
   store_tmp_reg,
   load_base_ptr, offset(0x0001), [ swapa, load ],   % restore base_ptr
   store_base_ptr,
   load_ret_reg, push,                               % push return value
   load_tmp_reg,
-  % load_base_ptr, offset(0x0002), [ swapa, load, swapd, const(2), syscall, swapd ],
   [ jump ].                                         % jump to return addr
 
 generateExpression(Expr) -->
   ( { Expr = const(Value) }, !,
       [ const(Value) ], push
-  ; { Expr = variable(Addr) }, !,
+  ; { Expr = variable(_Addr) }, !,
       load_value(Expr), push
-  ; { Expr = reference(Addr) }, !,
+  ; { Expr = reference(_Addr) }, !,
       load_value(Expr), push
-  ; { Expr = thunk(Addr) }, !       % TODO implement
+  ; { Expr = thunk(Addr) }, !,
+      [ const(Return) ], push,
+      load_base_ptr, push,
+      jump_links(Addr, Offset), store_tmp_reg,
+      offset(1), [ swapa, load ], push,      % load callers env
+      load_stack_ptr, store_base_ptr,
+      load_tmp_reg, offset(Offset), [ swapa, load, jump ],
+      [ label(Return) ]
   ; { Expr = procCall(Label, Params) }, !,
       pushParams(Params),
       [ const(Return) ],
-      % [ swapd, const(2), syscall, swapd ],
       push,
       load_base_ptr, push,
-      load_base_ptr, jump_static_links(Label, Addr), push,
+      jump_links(Label, Addr), push,
       load_stack_ptr, store_base_ptr,
-      % [ const(41), swapd, const(2), syscall ],
-      % load_base_ptr, print_acc,
       [ const(Addr), jump ],
       [ label(Return) ]
   ; { Expr = neg(E) }, !,
@@ -104,8 +106,8 @@ pushParams([H | T]) -->
     generateExpression(Expr)
   ; { H = reference(V) }, !,
     load_reference(V), push
-  ; { H = thunk(Addr) },
-    [ const(Addr), push ]
+  ; { H = thunk(Addr), !, unpackAddr(Addr, Unpacked) },
+    [ const(Unpacked) ], push
   ).
 
 generateBool(Bool, True, False) -->
@@ -167,8 +169,6 @@ generateInstruction(Instr, Return) -->
     [ label(False) ]
   ; { Instr = discardReturn(Call) }, !,
     generateExpression(Call),
-    top,
-    print_acc, % TODO delete after testing
     pop
   ; { Instr = return(Expr) }, !,
     generateExpression(Expr),
@@ -192,27 +192,34 @@ print_acc --> [ swapd, const(2), syscall, swapd ].
 
 load_reference(V) -->
   ( { V = reference(Addr) }, !,
-    jump_static_links(Addr, Offset),
+    jump_links(Addr, Offset),
     offset(Offset), [ swapa, load ]
   ; { V = variable(Addr) }, !,
-    jump_static_links(Addr, Offset),
+    jump_links(Addr, Offset),
     offset(Offset)
   ).
 
 load_value(V) -->
   load_reference(V), [ swapa, load ].
 
- % loads the static environment base_ptr into the accumulator and returns the
+ % loads the environment base_ptr into the accumulator and returns the
  % inner value in Unpacked
-jump_static_links(Addr, Unpacked) -->
-  load_base_ptr, jump_static_links_(Addr, Unpacked).
+jump_links(Addr, Unpacked) -->
+  load_base_ptr, jump_links_(Addr, Unpacked).
 
-jump_static_links_(Addr, Unpacked) -->
-  ( { var(Addr), Unpacked = Addr }, []
+jump_links_(Addr, Unpacked) -->
+  ( { var(Addr), !, Unpacked = Addr }, []
   ; { Addr = env(A) }, !,
       [ swapa, load ],
-      jump_static_links_(A, Unpacked)
+      jump_links_(A, Unpacked)
   ; { Unpacked = Addr }, []
+  ).
+
+unpackAddr(Addr, Unpacked) :-
+  ( var(Addr), !, Unpacked = Addr
+  ; Addr = env(A), !, unpackAddr(A, Unpacked)
+  ; Addr = dyn(A), !, unpackAddr(A, Unpacked)
+  ; Addr = Unpacked
   ).
 
 % offset the accumulator by given value
