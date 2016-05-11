@@ -2,6 +2,9 @@
 scriptDir=$(dirname -- "$(readlink -e -- "$BASH_SOURCE")")
 source="$scriptDir/$1"
 dest="$scriptDir/${1%.algol16}.sextium"
+inFile="$scriptDir/in/${1%.algol16}.in"
 algol16 $source $dest
-sextium $dest
+echo
+sextium $dest < $inFile
 rm $dest
+echo

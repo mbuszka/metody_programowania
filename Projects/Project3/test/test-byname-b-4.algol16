@@ -1,0 +1,20 @@
+program test_byname
+  local n, m
+  procedure f (x)
+    procedure increment (y)
+    begin
+      y := y + 1;
+      return y
+    end
+  begin
+    write x;
+    write increment(x);
+    return increment(x)
+  end
+begin
+  n := 1;
+  write f (n);
+  n := n + 1;
+  m := f (n);
+  write m
+end

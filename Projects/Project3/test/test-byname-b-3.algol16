@@ -1,0 +1,13 @@
+program test_byname
+  local n, m
+  procedure f (x, value y)
+  begin
+    n := n + x;
+    write n;
+    m := x + y;
+    write m
+  end
+begin
+  n := 0;
+  n := f(1,1)
+end

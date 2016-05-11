@@ -8,5 +8,5 @@ begin
     y := x mod y;
     x := t
   done;
-  write y
+  write x
 end
