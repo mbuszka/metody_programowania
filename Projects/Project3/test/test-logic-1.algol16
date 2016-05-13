@@ -17,5 +17,13 @@ begin
   if -1 <> 0 then write  15 else write -15 fi;
   if -1 =  0 then write -16 else write  16 fi;
   if -1 >  0 then write -17 else write  17 fi;
-  if -1 >= 0 then write -18 else write  18 fi
+  if -1 >= 0 then write -18 else write  18 fi;
+  if 1 < 0 and 1 < 0 then write -19 else write  19 fi;
+  if 1 < 0 and 1 > 0 then write -20 else write  20 fi;
+  if 1 > 0 and 1 < 0 then write -21 else write  21 fi;
+  if 1 > 0 and 1 > 0 then write  22 else write -22 fi;
+  if 1 < 0 or  1 < 0 then write -23 else write  23 fi;
+  if 1 < 0 or  1 > 0 then write  24 else write -24 fi;
+  if 1 > 0 or  1 < 0 then write  24 else write -24 fi;
+  if 1 > 0 or  1 > 0 then write  25 else write -25 fi
 end

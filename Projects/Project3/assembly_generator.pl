@@ -129,15 +129,23 @@ generateBool(Bool, True, False) -->
   ; { Bool = nq(Left, Right) }, !,
     generateBool(eq(Left, Right), False, True)
   ; { Bool = gt(Left, Right) }, !,
-    generateExpression(sub(Left, Right)),
-    top, [ swapd ], pop, [ const(0), sub ],
+    generateExpression(Left),
+    generateExpression(Right),
+    top, store_tmp_reg, pop,
+    load_tmp_reg, [ swapa, const(1), swapd, swapa, shift ],
+    top, [ swapd ], load_tmp_reg, [ sub, swapd ],
+    [ const(0xFFFF), swapd, shift ],
     [ swapa, const(True), swapa ],
     [ branchn, const(False), jump ]
   ; { Bool = gq(Left, Right) }, !,
     generateBool(not(lt(Left, Right)), True, False)
   ; { Bool = lt(Left, Right) }, !,
-    generateExpression(sub(Left, Right)),
-    top, [ swapd ], pop, [ swapd ],
+    generateExpression(Left),
+    generateExpression(Right),
+    top, store_tmp_reg, pop,
+    top, [ swapa, const(1), swapd, swapa, shift ],
+    load_tmp_reg, [ swapd ], top, [ sub, swapd ],
+    [ const(0xFFFF), swapd, shift ],
     [ swapa, const(True), swapa ],
     [ branchn, const(False), jump ]
   ; { Bool = lq(Left, Right) }, !,
