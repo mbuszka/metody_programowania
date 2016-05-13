@@ -1,6 +1,10 @@
+% generate thunks from call by name parameters
+% in following functions the variables with suffix cleaned will be used in
+% normal procedures, and those with suffix Thunk in thunks
+
 generateThunks(Procedures, All) :-
-  deduceTypes(Procedures),
-  phrase(generateThunks(Procedures), All).
+  deduceTypes(Procedures),                    % first deduce the types of call by name parameters
+  phrase(generateThunks(Procedures), All).    % then generate neccessary thunks
 
 generateThunks([]) --> [].
 generateThunks([proc(Addr, Args, Locals, Instructions) | T]) -->

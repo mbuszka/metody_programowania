@@ -1,0 +1,2 @@
+#!/bin/bash
+cat algol16.pl lexer.pl parser.pl namespace_resolver.pl type_resolver.pl thunk_generator.pl assembly_generator.pl assemble.pl > Maciej_Buszka.pl

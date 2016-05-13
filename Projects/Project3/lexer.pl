@@ -1,4 +1,4 @@
-%  lexer
+%  lexer based on "while_parser" by TWI
 
 lex(CodesList, TokenList) :-
   phrase(lexer(TokenList), CodesList).

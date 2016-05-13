@@ -2,9 +2,9 @@
 % it will try to find which call by name parameters should be passed as a thunk,
 % and which as a reference.
 % In second mode, given Flag = add_references it will set all free Type variables
-% to reference, works in conjunction with deduce
+% to reference
 
-deduceTypes(List) :-
+deduceTypes(List) :-                  % iteratively resolves Type variables
   deduceTypes(List, Flag),
   ( var(Flag), !,
     deduceTypes(List, add_references)

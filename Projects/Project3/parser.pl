@@ -1,4 +1,4 @@
-% parser
+% parser based on "while_parser" by TWI
 
 :- use_module(library(lists)).
 

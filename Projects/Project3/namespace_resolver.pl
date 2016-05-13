@@ -1,4 +1,9 @@
 % resolve indentifiers namespace
+% Names is a list of known identifiers, when checking namespace,
+% first matching identifier is used (respecting type - variable or procedure)
+
+validate(AST, Validated) :-           % function used by the rest of compiler
+  phrase(validateProgram(AST), Validated).
 
 validateProgram(proc(_, [], Ds, Ins)) -->
   [ proc(_Addr, [], Locals, Insv) ],
@@ -13,7 +18,7 @@ validateProc(proc(Id, Args, Ds, Ins), Names,
   validateDeclarations(Ds, Names2, Names1, NewNames, 0, Locals),
   { validateInstructions(Ins, NewNames, Insv) }.
 
- % TODO check for duplicate names
+ % TODO check for duplicate names maybe
 
 validateDeclarations([], Names, _LocalNames, Names, _Cnt, []) -->
   [].
@@ -27,7 +32,7 @@ validateDeclarations([H|T], Names, LocalNames, RetNames, Cnt, NewLocals) -->
   ),
   validateDeclarations(T, NewNames, NewLocalNames, RetNames, Cntr, Locals).
 
- % TODO check for duplicate names
+ % TODO check for duplicate names maybe
 
 validateFormalParameters(Args, Argsv, Names) :-
   validateFormalParameters(Args, Argsv, 3, Names).
@@ -139,8 +144,6 @@ validateActualParams([H| T], [A|Args], Names, [Hv| Tv]) :-
     Hv = value(Expv)),
   validateActualParams(T, Args, Names, Tv).
 
-% validateVar(V, Names, Vv) :-
-%   validateVar(V, Names, Vv).
 validateVar(variable(Id), [N| _Names], V) :-
   ( N = local(Id, Addr), !, V = variable(Addr)
   ; N = name(Id, Addr, Type), !, V = name(Addr, Type)
@@ -157,6 +160,3 @@ validateVar(variable(Id), [N| Names], Vv) :-
       )
   ; Vv = V
   ).
-
-validate(AST, Validated) :-
-  phrase(validateProgram(AST), Validated).
