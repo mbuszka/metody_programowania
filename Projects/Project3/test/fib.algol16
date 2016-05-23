@@ -1,0 +1,23 @@
+program fib
+	local x, y
+
+	procedure fib(value n)
+	begin
+		if n <= 1
+		then
+			return n
+		else
+			return fib(n-1) + fib(n-2)
+		fi
+	end
+	
+
+begin
+	read y;
+	while y <> 0
+	do
+		x := fib(y);
+		write x;
+		read y
+	done
+end

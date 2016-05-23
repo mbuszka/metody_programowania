@@ -1,0 +1,38 @@
+program power_proc
+	local x, y, z
+	
+	procedure power(value a, value b)
+		procedure multiply(value aa, value bb)
+		local var_1, var_2
+		begin
+			var_1 := aa;
+			var_2 := bb;
+			return var_1 * var_2
+		end
+		
+		local temp
+		
+	begin
+		temp := 1;
+		while b > 0
+		do
+			temp := multiply(temp, a);
+			b := b - 1
+		done;
+		return temp
+	end
+	
+	
+
+begin
+	read x;
+	while x <> 0
+	do
+		read y;
+		write power(x, y);
+		read x
+	done
+end
+
+(* program wczytuje dwie liczby: a, b i wypisuje wartość a ^ b (potęgowanie)
+jeżeli podamy a równe 0, program zakończy działanie. *)

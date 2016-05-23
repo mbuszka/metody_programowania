@@ -1,0 +1,31 @@
+program nested_rec
+    local global_var
+   
+    procedure A(value a)
+        procedure B(value b)
+        begin
+            write global_var;
+            b := b - 1;
+            write A(b)
+        end
+       
+    begin
+        if a > 0
+        then
+            call B(a)
+        else
+            return 5
+        fi;
+       
+        return 6
+    end
+   
+begin
+    global_var := 666;
+    write A(10)
+end
+ 
+(* A i zagnieżdzone B będą się odpalać nawzajem rekurencyjnie tyle razy, 
+ile wynosi argument do A w wywołaniu w głównym bloku.
+B dodatkowo odwołuje się do nielokalnej zmiennej.
+Na wyjściu powinno być 10 razy 666, potem jedna piątka i 10 szóstek. *)

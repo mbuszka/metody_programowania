@@ -1,0 +1,8 @@
+program test
+procedure add(value a, value b)
+begin
+return a + b
+end
+begin
+write (add(1, add(2, -3)))
+end
