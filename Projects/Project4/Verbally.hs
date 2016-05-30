@@ -28,12 +28,12 @@ instance Token RichNumber where
   def n = (n, 0, GenPl)
 
 slownie :: Waluta -> Integer -> String
-slownie c n = number ++ " " ++ currency where
+slownie c n = number ++ currency where
   toks = tokenize toThousands $ abs n
   (_, _, grammCase) = head toks
   number
     | n <  0    = "minus " ++ num
-    | n == 0    = "zero"
+    | n == 0    = "zero "
     | otherwise = num
   num = unwords $ filter (not . null) $ translate $ reverse toks
   currency = case grammCase of
@@ -42,9 +42,8 @@ slownie c n = number ++ " " ++ currency where
     GenPl  -> dopelniaczMn c
 
 tokenize :: (Token a, Token b) => (b -> Maybe (a, b)) -> Integer -> [a]
-tokenize f n
-  | n == 0    = [def n]
-  | otherwise = unfoldr f (def n)
+tokenize f n = if n == 0 then [def n] else
+   unfoldr f (def n)
 
 toThousands :: Number -> Maybe (RichNumber, Number)
 toThousands (n, e)
@@ -74,9 +73,9 @@ toBig (n, e)
 translate :: [RichNumber] -> [String]
 translate = map f where
   f (n, e, c) = if n == 0 then "" else number ++ bignum where
-    number = unwords num
+    number = if e /= 0 && n == 1 then "" else unwords num ++ " "
     num    = reverse $ map translateNumber $ tokenize inThousands n
-    bignum = if e == 0 then "" else " " ++ bigNumeral c e
+    bignum = if e == 0 then "" else bigNumeral c e
 
 bigNumeral :: Case -> Exponent -> String
 bigNumeral c e
