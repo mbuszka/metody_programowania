@@ -1,5 +1,6 @@
 module Main where
 import Data.Maybe (fromMaybe)
+import Control.Monad
 main :: IO ()
 main = return ()
 -- exercise 1
@@ -25,6 +26,24 @@ permi3 (x:xs) = do
       n <- [0 .. (length ls)]
       let (l, r) = splitAt n ls
       return $ l ++ [a] ++ r
+
+-- better
+
+insert :: MonadPlus m => a -> [a] -> m [a]
+insert e [] = return [e]
+insert e (x:xs) = return (e:x:xs)
+                  `mplus`
+                  do
+                    tmp <- insert e xs
+                    return $ x:tmp
+
+
+permi3' :: MonadPlus m => [a] -> m [a]
+permi3' []  = return []
+permi3' (x:xs) = do
+  tmp <- permi3' xs
+  insert x tmp
+
 
 -- exercise 2
 
@@ -54,10 +73,13 @@ perms3 xxs = do
       (y, ys) <- selects xs
       return (y, x:ys)
 
+-- exercise 3
+
 sublist1 :: [a] -> [[a]]
-sublist1 []     = [[]]
-sublist1 (x:xs) = map (x:) rests ++ rests where
-  rests = sublist1 xs
+-- sublist1 []     = [[]]
+-- sublist1 (x:xs) = concatMap (\ls -> [x:ls, ls]) $ sublist1 xs
+sublist1 = foldr (\x -> concatMap (\ls -> [x:ls, ls])) [[]]
+
 
 sublist2 :: [a] -> [[a]]
 sublist2 []     = [[]]
@@ -68,6 +90,7 @@ sublist3 []     = [[]]
 sublist3 (x:xs) = do
   rest <- sublist3 xs
   [x:rest, rest]
+
 
 -- exercise 4
 
@@ -103,20 +126,24 @@ label (Elem _ x _) = x
 
 -- exercise 6
 
+enumInts' :: Cyclist Integer
+enumInts' = aux 0 where
+  aux n = Elem (aux (n-1)) n (aux $ n+1)
+
 enumInts :: Cyclist Integer
 enumInts = let
   zero = Elem neg 0 pos
   (infNeg, neg) = gobkw infPos [-1, -2 ..] zero
   (pos, infPos) = gofwd zero   [1 .. ]     infNeg
   in zero where
-  gobkw _ []     _       = error ""
-  gobkw prev (y:ys) next = let this = Elem rest y next
-                               (first, rest) = gobkw prev ys this
-                           in  (first, this)
-  gofwd _    []     _    = error ""
-  gofwd prev (y:ys) next = let this = Elem prev y rest
-                               (rest, last') = gofwd this ys next
-                           in  (this, last')
+    gobkw _ []     _       = error ""
+    gobkw prev (y:ys) next = let this = Elem rest y next
+                                 (first, rest) = gobkw prev ys this
+                             in  (first, this)
+    gofwd _    []     _    = error ""
+    gofwd prev (y:ys) next = let this = Elem prev y rest
+                                 (rest, last') = gofwd this ys next
+                             in  (this, last')
 
 -- exercise 7
 
@@ -129,7 +156,7 @@ instance Applicative (Cyc a) where
   Cyc f <*> Cyc g = Cyc (\c ->
     let (phi, c') = f c
         (x,  c'') = g c'
-    in (phi x, c''))
+    in  (phi x, c''))
 
 instance Monad (Cyc a) where
   Cyc f >>= phi = Cyc (\c ->
@@ -175,3 +202,14 @@ example2 = runCyc enumInts (do
   bkw
   z <- lbl
   return $ x * y * z)
+
+
+example3 :: Integer
+example3 = runCyc enumInts (do
+  _ <- replicateM 10000000 (do fwd; bkw)
+  lbl)
+
+example3' :: Integer
+example3' = runCyc enumInts' (do
+  _ <- replicateM 10000000 (do fwd; bkw)
+  lbl)
