@@ -44,7 +44,7 @@ slownie c n = str where
     | n <  0    = "minus" : num
     | otherwise = num
   num
-    | an == 1         = [one $ rodzaj c]
+    | an == 1   = [one $ rodzaj c]
     | otherwise = numS
   currency = case grammCase of
     NomSin -> mianownikPoj c
