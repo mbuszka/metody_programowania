@@ -27,17 +27,25 @@ instance Token RichNumber where
 upperBound :: Integer
 upperBound = 10 ^ 6000 - 1
 
+unwordsNonEmpty :: [String] -> String
+unwordsNonEmpty = unwords . filter (not . null)
+
 slownie :: Waluta -> Integer -> String
-slownie c n = number ++ currency where
-  toks = tokenize toThousands $ abs n
+slownie c n = str where
+  an   = abs n
+  toks = tokenize toThousands an
+  numS = translate (rodzaj c) $ reverse toks
   (_, _, grammCase) = head toks
+  str
+    | an > upperBound = "mnóstwo " ++ dopelniaczMn c
+    | otherwise       = unwordsNonEmpty $ number ++ [currency]
   number
-    | n == 0    = "zero "
-    | n <  0    = "minus " ++ num
+    | n == 0    = ["zero"]
+    | n <  0    = "minus" : num
     | otherwise = num
-  num = if abs n > upperBound
-    then "mnóstwo "
-    else unwords $ filter (not . null) $ translate $ reverse toks
+  num
+    | an == 1         = [one $ rodzaj c]
+    | otherwise = numS
   currency = case grammCase of
     NomSin -> mianownikPoj c
     NomPl  -> mianownikMn  c
@@ -72,12 +80,14 @@ toBig (n, e)
   | n <= 0    = Nothing
   | otherwise = Just ((n `mod` 10, e), (n `div` 10, e + 1))
 
-translate :: [RichNumber] -> [String]
-translate = map f where
-  f (n, e, c) = if n == 0 then "" else number ++ bignum where
-    number = if e /= 0 && n == 1 then "" else unwords num ++ " "
-    num    = reverse $ map translateNumber $ tokenize inThousands n
-    bignum = if e == 0 then "" else bigNumeral c e
+translate :: Rodzaj -> [RichNumber] -> [String]
+translate r xs = ss ++ [s] where
+  ss = map (f Meski) $ init xs
+  s  = f r $ last xs
+  f r (n, e, c) = if n == 0 then "" else unwordsNonEmpty $ number ++ [bignum] where
+    number = if e /= 0 && n == 1 then [""] else num
+    num    = reverse $ map (translateNumber r) $ tokenize inThousands n
+    bignum = if e == 0 then "" else bigNumeral (if n == 1 then NomSin else c) e
 
 bigNumeral :: Case -> Exponent -> String
 bigNumeral c e
@@ -101,9 +111,10 @@ translateBig (n, e)
   | e == 1 = fromMaybe "" $ M.lookup n latinTenNinety
   | e == 2 = fromMaybe "" $ M.lookup n latinHundredNinehundred
 
-translateNumber :: Number -> String
-translateNumber (n, e)
-  | e == 0 && n < 20 = fromMaybe "" $ M.lookup n oneNineteen
+translateNumber :: Rodzaj -> Number -> String
+translateNumber r (n, e)
+  | e == 0 && n == 2 = two r
+  | e == 0           = fromMaybe "" $ M.lookup n oneNineteen
   | e == 1 && n == 2 = "dwadzieścia"
   | e == 1 && n == 3 = "trzydzieści"
   | e == 1 && n == 4 = "czterdzieści"

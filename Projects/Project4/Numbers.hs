@@ -1,4 +1,6 @@
 module Numbers(oneNineteen
+              ,one
+              ,two
               ,latinSmall
               ,latinOneNine
               ,latinTenNinety
@@ -6,6 +8,18 @@ module Numbers(oneNineteen
               ) where
 
 import qualified Data.Map as M
+import           Waluty(Rodzaj(..))
+
+one :: Rodzaj -> String
+one r = case r of
+  Zenski -> "jedna"
+  Meski  -> "jeden"
+  Nijaki -> "jedno"
+
+two :: Rodzaj ->  String
+two r = case r of
+  Zenski -> "dwie"
+  _      -> "dwa"
 
 oneNineteen :: M.Map Integer String
 oneNineteen = M.fromList
@@ -14,7 +28,7 @@ oneNineteen = M.fromList
   ,(7, "siedem"),      (8, "osiem"),         (9, "dziewięć")
   ,(10, "dziesięć"),   (11, "jedenaście"),   (12, "dwanaście")
   ,(13, "trzynaście"), (14, "czternaście"),  (15, "piętnaście")
-  ,(16, "szesnaćie"),  (17, "siedemnaście"), (18, "osiemnaście")
+  ,(16, "szesnaście"), (17, "siedemnaście"), (18, "osiemnaście")
   ,(19, "dziewiętnaście")]
 
 latinSmall :: M.Map Integer String
